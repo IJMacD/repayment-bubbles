@@ -1,6 +1,6 @@
-import { Pledge } from "./pledges";
+import { Pledge, PledgeStatus } from "./pledges";
 
-export function PledgeBubbles ({ pledges, overdueTotal, pendingTotal, now }: { pledges: Pledge[], overdueTotal: number, pendingTotal: number, now: number }) {
+export function PledgeBubbles ({ pledges, overdueTotal, pendingTotal, now, isPrescient = false }: { pledges: Pledge[], overdueTotal: number, pendingTotal: number, now: number, isPrescient: boolean }) {
     const rings = [];
     const bubbles = [];
 
@@ -29,7 +29,9 @@ export function PledgeBubbles ({ pledges, overdueTotal, pendingTotal, now }: { p
         const interestAmount = pledge.amount * pledge.interestRate * actualDuration / ONE_YEAR * 5e-2;
         const r = Math.sqrt(pledge.amount) * AMOUNT_SCALE;
 
-        const isOverdue = actualDuration > duration;
+        const isOverdue = isPrescient ?
+            pledge.status === PledgeStatus.live && (+pledge.endDate < Date.now()) :
+            actualDuration > duration;
 
         rings.push(<ellipse key={i} cx={500} cy={cy} rx={orbitRadius} ry={orbitRadius} stroke="rgba(255,255,255,0.1)" fill="none" />);
         bubbles.push(<ellipse key={i} cx={x} cy={y} rx={r} ry={r} fill={isOverdue ? "red" : "green"} stroke={isOverdue ? "darkred" : "darkgreen"} strokeWidth={interestAmount}><title>{pledge.projectName}{"\n"}{(pledge.interestRate*100).toFixed(1)}%</title></ellipse>);
