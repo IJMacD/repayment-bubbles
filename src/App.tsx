@@ -26,14 +26,15 @@ function App() {
   const earliestStart = Math.min(...pledges.map(p => +p.startDate));
   const latestStart = Math.max(...pledges.map(p => +p.startDate));
 
+  const [ speed, setSpeed ] = useState(1);
+
   useEffect(() => {
     const delta = 100;
-    const scale = 86400;
 
     if (isPlaying) {
       const cb = () => {
         setNow(now => {
-          const newVal = now + scale * delta;
+          const newVal = now + 86400 * speed * delta;
 
           if (isLooping && newVal > latestStart) {
             return earliestStart;
@@ -47,7 +48,7 @@ function App() {
 
       return () => clearInterval(id);
     }
-  }, [isPlaying, isLooping]);
+  }, [isPlaying, isLooping, speed]);
 
   // const livePledges = pledges.filter(p => p.status === PledgeStatus.live);
   // const completedPledges = pledges.filter(p => p.status === PledgeStatus.completed);
@@ -107,8 +108,13 @@ function App() {
           <p>Unique Projects: {projects.size}</p>
           <h2>Animation</h2>
           <button onClick={() => setIsPlaying(p => !p)}>{isPlaying?"Pause":"Play"}</button>
-          <button onClick={() => setNow(earliestStart)}>Reset</button>
-          <label>Loop: <input type="checkbox" checked={isLooping} onChange={e => setIsLooping(e.target.checked)} /></label>
+          <button onClick={() => setNow(earliestStart)}>Earliest</button>
+          <button onClick={() => setNow(Date.now())}>Now</button>
+          <label style={{display:"block"}}>Loop: <input type="checkbox" checked={isLooping} onChange={e => setIsLooping(e.target.checked)} /></label>
+          <label style={{display:"block"}}>
+            Speed:{' '}
+            <input type="range" value={speed} min={0} max={10} onChange={e => setSpeed(e.target.valueAsNumber)} />
+          </label>
           <p>Now: {new Date(now).toDateString()}</p>
           {/* <p>Latest Start: {new Date(latestStart).toDateString()}</p> */}
           <PledgeStatsTable rows={statsRowsCurrent} />
