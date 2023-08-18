@@ -6,5 +6,6 @@ export default defineConfig({
   build: {
     manifest: true
   },
+  base: "/repayment-bubbles/",
   plugins: [react()],
 })
