@@ -3,3 +3,22 @@
   margin: 0 auto;
   padding: 2rem;
 }
+
+.age-rings {
+  stroke: #999;
+  /* stroke: rgba(0,0,0,0.25); */
+}
+
+.age-label {
+  fill: rgba(0,0,0,0.5);
+}
+
+@media dark-mode {
+  svg {
+    background-color: #111;
+  }
+
+  .age-rings {
+    stroke: rgba(255,255,255,0.1);
+  }
+}

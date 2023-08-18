@@ -60,14 +60,19 @@ function App() {
 
 
   // const overduePledges = livePledges.filter(p => +p.endDate < now);
+  const realNow = Date.now();
 
   const startedPledges = pledges.filter(p => +p.startDate < now);
 
   const livePledges = startedPledges.filter(p => +p.endDate > now);
   const completedPledges = startedPledges.filter(p => +p.endDate < now && p.status === PledgeStatus.completed);
   const overduePledges = startedPledges.filter(p => +p.endDate < now && p.status === PledgeStatus.live);
+  const futureLatePledges = startedPledges.filter(p => p.status === PledgeStatus.live && +p.endDate < realNow);
 
   // const pendingPledges = pledges.filter(p => +p.startDate > now);
+  const liveRealPledges = pledges.filter(p => +p.endDate > realNow);
+  const completedRealPledges = pledges.filter(p => +p.endDate < realNow && p.status === PledgeStatus.completed);
+  const overdueRealPledges = pledges.filter(p => +p.endDate < realNow && p.status === PledgeStatus.live);
 
   const projects = new Set(pledges.map(p => p.projectName));
   const liveProjects = new Set(livePledges.map(p => p.projectName));
@@ -76,6 +81,9 @@ function App() {
   const statsRowsAll = [
     { label: "Pledges", pledges },
     // { label: "Unknown Pledges", pledges: unknownPledges },
+    { label: "Completed Pledges", pledges: completedRealPledges },
+    { label: "Live Pledges", pledges: liveRealPledges },
+    { label: "Overdue Pledges", pledges: overdueRealPledges },
   ];
 
   const statsRowsCurrent = [
@@ -83,12 +91,15 @@ function App() {
     { label: "Completed Pledges", pledges: completedPledges },
     { label: "Live Pledges", pledges: livePledges },
     { label: "Overdue Pledges", pledges: overduePledges },
+    { label: "Will Be Overdue", pledges: futureLatePledges },
     // { label: "Pending Pledges", pledges: pendingPledges },
   ];
 
   const pendingAmount = sumPledges(completedPledges) - sumPledges(livePledges) - sumPledges(overduePledges);
 
   const interestReceived = completedPledges.reduce((total, pledge) => total + pledge.expectedInterest, 0);
+
+  // const interestRealReceived = completedRealPledges.reduce((total, pledge) => total + pledge.expectedInterest, 0);
 
   const currencyFormatter = new Intl.NumberFormat(undefined, { style: "currency", currency: "GBP" });
 
@@ -98,6 +109,8 @@ function App() {
     return startedPledges.some(p => (+p.endDate < now) && p.status === PledgeStatus.live);
   });
 
+  const ONE_YEAR = 365.25 * 86400 * 1000;
+
   return (
     <>
       <div style={{display:"flex"}}>
@@ -105,17 +118,19 @@ function App() {
           <input type="file" onChange={handleFile} />
           <h2>All Time</h2>
           <PledgeStatsTable rows={statsRowsAll} />
+          {/* <p>Received Interest: {currencyFormatter.format(interestRealReceived)}</p> */}
           <p>Unique Projects: {projects.size}</p>
           <h2>Animation</h2>
-          <button onClick={() => setIsPlaying(p => !p)}>{isPlaying?"Pause":"Play"}</button>
+          <button onClick={() => setIsPlaying(p => !p)}>{isPlaying?"Pause":"Play"}</button><br/>
           <button onClick={() => setNow(earliestStart)}>Earliest</button>
+          <button onClick={() => setNow(now => now - ONE_YEAR)}>- One Year</button>
           <button onClick={() => setNow(Date.now())}>Now</button>
           <label style={{display:"block"}}>Loop: <input type="checkbox" checked={isLooping} onChange={e => setIsLooping(e.target.checked)} /></label>
           <label style={{display:"block"}}>
             Speed:{' '}
             <input type="range" value={speed} min={0} max={10} onChange={e => setSpeed(e.target.valueAsNumber)} />
           </label>
-          <p>Now: {new Date(now).toDateString()}</p>
+          <p>Now: {new Date(now).toISOString().substring(0,10)}</p>
           {/* <p>Latest Start: {new Date(latestStart).toDateString()}</p> */}
           <PledgeStatsTable rows={statsRowsCurrent} />
           <p>Received Interest: {currencyFormatter.format(interestReceived)}</p>
@@ -125,7 +140,7 @@ function App() {
           <p>Overdue: {[...overdueProjects.values()].join("; ")}</p>
         </div>
         <div style={{flex: 1}}>
-          <PledgeBubbles pledges={livePledges} overdueTotal={sumPledges(overduePledges)} pendingTotal={pendingAmount} now={now} isPrescient />
+          <PledgeBubbles pledges={startedPledges} pendingTotal={pendingAmount} now={now} isPrescient />
         </div>
       </div>
       <ProjectTable pledges={pledges} now={now} />

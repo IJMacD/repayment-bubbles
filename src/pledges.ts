@@ -18,7 +18,7 @@ export interface Pledge {
 }
 
 export function parsePledges (data: { [key: string]: string }[]): Pledge[] {
-    return data.map(data => ({
+    return data.filter(data => data["Loan Start"] != "N/A").map(data => ({
         projectName: data["Project"],
         amount: +data["Amount"],
         interestRate: parseFloat(data["Interest Rate"]) / 100,
