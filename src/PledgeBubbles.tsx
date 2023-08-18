@@ -1,6 +1,7 @@
+import { ColourMode } from "./ColourMode";
 import { Pledge, PledgeStatus } from "./pledges";
 
-export function PledgeBubbles ({ pledges, pendingTotal, now, isPrescient = false }: { pledges: Pledge[], pendingTotal: number, now: number, isPrescient: boolean }) {
+export function PledgeBubbles ({ pledges, pendingTotal, now, colourMode }: { pledges: Pledge[], pendingTotal: number, now: number, colourMode: ColourMode }) {
     const rings = [];
     const bubbles = [];
 
@@ -44,6 +45,59 @@ export function PledgeBubbles ({ pledges, pendingTotal, now, isPrescient = false
         return [x, y];
     }
 
+    function getColour (colourMode: ColourMode, pledge: Pledge) {
+        if (colourMode === ColourMode.Solid) {
+            return [ "green", "darkgreen" ];
+        }
+
+        if (colourMode === ColourMode.Overdue) {
+            const isUnfinished = +pledge.endDate > Date.now();
+            const isOverdue = pledge.status === PledgeStatus.live && +pledge.endDate < Date.now();
+
+            return [
+                isUnfinished ? "lightgrey" : (isOverdue ? "red" : "green"),
+                isUnfinished ? "darkgrey" : (isOverdue ? "darkred" : "darkgreen")
+            ];
+        }
+
+        if (colourMode === ColourMode.Interest) {
+            const minInterest = 0.06;
+            const maxInterest = 0.11;
+            const x = (pledge.interestRate - minInterest) / (maxInterest - minInterest);
+            const fill = colourInterpolateHSL(x, "hsl(0deg 100% 50%)", "hsl(240deg 100% 50%)");
+
+            return [fill, "#000"];
+        }
+
+        if (colourMode === ColourMode.Name) {
+            const minChar = "0".charCodeAt(0);
+            const maxChar = "Z".charCodeAt(0);
+            const x = (pledge.projectName.charCodeAt(0) - minChar) / (maxChar - minChar);
+            const fill = colourInterpolateHSL(x, "hsl(0deg 100% 50%)", "hsl(240deg 100% 50%)");
+
+            return [fill, "#000"];
+        }
+
+        if (colourMode === ColourMode.Age) {
+            const minAge = Date.now() - ONE_YEAR * 3;
+            const maxAge = Date.now();
+            const x = (+pledge.startDate - minAge) / (maxAge - minAge);
+            const fill = colourInterpolateHSL(x, "hsl(0deg 100% 50%)", "hsl(240deg 100% 50%)");
+
+            return [fill, "#000"];
+        }
+
+        if (colourMode === ColourMode.Repaid) {
+            const fill = colourInterpolateHSL(pledge.repaidFraction, "hsl(0deg 100% 50%)", "hsl(240deg 100% 50%)");
+
+            return [fill, "#000"];
+        }
+
+        return [];
+    }
+
+    const formatter = Intl.NumberFormat([], { style: "currency", currency: "GBP" })
+
     for (const pledge of pledges) {
         const start = +pledge.startDate;
         const end = +pledge.endDate;
@@ -59,9 +113,7 @@ export function PledgeBubbles ({ pledges, pendingTotal, now, isPrescient = false
 
         const isUnfinished = end > Date.now();
 
-        const isOverdue = isPrescient ?
-            pledge.status === PledgeStatus.live && (+pledge.endDate < Date.now()) :
-            actualFraction > 1;
+        const isOverdue = pledge.status === PledgeStatus.live && +pledge.endDate < now;
 
         if (actualFraction > 1 && (!isOverdue && !isUnfinished)) {
             continue;
@@ -69,8 +121,21 @@ export function PledgeBubbles ({ pledges, pendingTotal, now, isPrescient = false
 
         const ring = makeRing(i, duration);
 
+        const [ fill, stroke ] = getColour(colourMode, pledge);
+
         rings.push(ring);
-        bubbles.push(<ellipse key={i} cx={x} cy={y} rx={r} ry={r} fill={isUnfinished ? "lightgrey" : (isOverdue ? "red" : "green")} stroke={isUnfinished ? "darkgrey" : (isOverdue ? "darkred" : "darkgreen")} strokeWidth={interestAmount}><title>{pledge.projectName}{"\n"}{(pledge.interestRate*100).toFixed(1)}%</title></ellipse>);
+        bubbles.push(
+            <ellipse
+                key={i}
+                cx={x} cy={y}
+                rx={r} ry={r}
+                fill={fill}
+                stroke={stroke}
+                strokeWidth={interestAmount}
+            >
+                <title>{pledge.projectName}{"\n"}{formatter.format(pledge.amount)} {(pledge.interestRate*100).toFixed(1)}%</title>
+            </ellipse>
+        );
 
         i++;
     }
@@ -135,4 +200,73 @@ export function PledgeBubbles ({ pledges, pendingTotal, now, isPrescient = false
         {/* { rings } */}
         { bubbles }
     </svg>;
+}
+
+
+function colourInterpolateHex (x: number, start: string, end: string) {
+    const startColour = [
+        parseInt(start.substring(1, 3), 16),
+        parseInt(start.substring(3, 5), 16),
+        parseInt(start.substring(5, 7), 16),
+    ];
+    const endColour = [
+        parseInt(end.substring(1, 3), 16),
+        parseInt(end.substring(3, 5), 16),
+        parseInt(end.substring(5, 7), 16),
+    ];
+    const diff = [
+        endColour[0] - startColour[0],
+        endColour[1] - startColour[1],
+        endColour[2] - startColour[2],
+    ];
+    const result = [
+        startColour[0] + diff[0] * x,
+        startColour[1] + diff[1] * x,
+        startColour[2] + diff[2] * x,
+    ];
+    const clamped = [
+        Math.min(255, Math.max(Math.round(result[0]), 0)),
+        Math.min(255, Math.max(Math.round(result[1]), 0)),
+        Math.min(255, Math.max(Math.round(result[2]), 0)),
+    ];
+    const hex = [
+        clamped[0].toString(16).padStart(2, "0"),
+        clamped[1].toString(16).padStart(2, "0"),
+        clamped[2].toString(16).padStart(2, "0"),
+    ];
+    return `#${hex.join("")}`;
+}
+
+function colourInterpolateHSL (x: number, start: string, end: string) {
+    const hslRe = /hsl\(([\d.]+)deg ([\d.]+)% ([\d.]+)%\)/;
+    const startMatch = hslRe.exec(start);
+    const endMatch = hslRe.exec(end);
+    if (!startMatch) return end;
+    if (!endMatch) return start;
+    const startColour = [
+        parseInt(startMatch[1], 10),
+        parseInt(startMatch[2], 10),
+        parseInt(startMatch[3], 10),
+    ];
+    const endColour = [
+        parseInt(endMatch[1], 10),
+        parseInt(endMatch[2], 10),
+        parseInt(endMatch[3], 10),
+    ];
+    const diff = [
+        endColour[0] - startColour[0],
+        endColour[1] - startColour[1],
+        endColour[2] - startColour[2],
+    ];
+    const result = [
+        startColour[0] + diff[0] * x,
+        startColour[1] + diff[1] * x,
+        startColour[2] + diff[2] * x,
+    ];
+    const clamped = [
+        Math.min(360, Math.max(result[0], 0)),
+        Math.min(100, Math.max(result[1], 0)),
+        Math.min(100, Math.max(result[2], 0)),
+    ];
+    return `hsl(${clamped[0]}deg ${clamped[1]}% ${clamped[2]}%)`;
 }

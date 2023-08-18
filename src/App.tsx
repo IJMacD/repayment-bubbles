@@ -5,12 +5,14 @@ import { Pledge, PledgeStatus, parsePledges } from './pledges';
 import { PledgeStatsTable } from './PledgeStatsTable';
 import { PledgeBubbles } from './PledgeBubbles';
 import { ProjectTable } from './ProjectTable';
+import { ColourMode } from './ColourMode';
 
 function App() {
   const [ pledges, setPledges ] = useState([] as Pledge[]);
   const [ now, setNow ] = useState(Date.now());
   const [ isPlaying, setIsPlaying ] = useState(false);
   const [ isLooping, setIsLooping ] = useState(false);
+  const [ colourMode, setColourMode ] = useState(ColourMode.Overdue);
 
   async function handleFile (e: FormEvent<HTMLInputElement>) {
     if (e.currentTarget.files?.length) {
@@ -120,6 +122,31 @@ function App() {
           <PledgeStatsTable rows={statsRowsAll} />
           {/* <p>Received Interest: {currencyFormatter.format(interestRealReceived)}</p> */}
           <p>Unique Projects: {projects.size}</p>
+          <h2>Colour Mode</h2>
+          <label>
+            <input type="radio" name="colourMode" value={ColourMode.Solid} checked={colourMode === ColourMode.Solid} onChange={() => setColourMode(ColourMode.Solid)} />
+            Solid
+          </label>
+          <label>
+            <input type="radio" name="colourMode" value={ColourMode.Overdue} checked={colourMode === ColourMode.Overdue} onChange={() => setColourMode(ColourMode.Overdue)} />
+            Overdue
+          </label>
+          <label>
+            <input type="radio" name="colourMode" value={ColourMode.Interest} checked={colourMode === ColourMode.Interest} onChange={() => setColourMode(ColourMode.Interest)} />
+            Interest
+          </label>
+          <label>
+            <input type="radio" name="colourMode" value={ColourMode.Name} checked={colourMode === ColourMode.Name} onChange={() => setColourMode(ColourMode.Name)} />
+            Name
+          </label>
+          <label>
+            <input type="radio" name="colourMode" value={ColourMode.Age} checked={colourMode === ColourMode.Age} onChange={() => setColourMode(ColourMode.Age)} />
+            Age
+          </label>
+          <label>
+            <input type="radio" name="colourMode" value={ColourMode.Repaid} checked={colourMode === ColourMode.Repaid} onChange={() => setColourMode(ColourMode.Repaid)} />
+            Repaid
+          </label>
           <h2>Animation</h2>
           <button onClick={() => setIsPlaying(p => !p)}>{isPlaying?"Pause":"Play"}</button><br/>
           <button onClick={() => setNow(earliestStart)}>Earliest</button>
@@ -140,7 +167,7 @@ function App() {
           <p>Overdue: {[...overdueProjects.values()].join("; ")}</p>
         </div>
         <div style={{flex: 1}}>
-          <PledgeBubbles pledges={startedPledges} pendingTotal={pendingAmount} now={now} isPrescient />
+          <PledgeBubbles pledges={startedPledges} pendingTotal={pendingAmount} now={now} colourMode={colourMode} />
         </div>
       </div>
       <ProjectTable pledges={pledges} now={now} />
