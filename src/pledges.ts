@@ -11,6 +11,7 @@ export interface Pledge {
     /** As raw fraction, not percent */
     interestRate: number;
     expectedInterest: number,
+    paidInterest: number,
     repaidFraction: number;
     status: PledgeStatus;
     startDate: Date,
@@ -23,6 +24,7 @@ export function parsePledges (data: { [key: string]: string }[]): Pledge[] {
         amount: +data["Amount"],
         interestRate: parseFloat(data["Interest Rate"]) / 100,
         expectedInterest: parseFloat(data["Expected Interest"]),
+        paidInterest: parseFloat(data["Interest Paid"]),
         repaidFraction: parseFloat(data["Interest Paid"]) / parseFloat(data["Expected Interest"]),
         status: parseStatus(data["Status"]),
         startDate: parseDate(data["Loan Start"]),

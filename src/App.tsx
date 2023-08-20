@@ -6,6 +6,8 @@ import { PledgeStatsTable } from './PledgeStatsTable';
 import { PledgeBubbles } from './PledgeBubbles';
 import { ProjectTable } from './ProjectTable';
 import { ColourMode } from './ColourMode';
+import { calcAmountPledged, calcAvgInterestRate, calcInterestPaid, calcInterestPerDay, filterLivePledges } from './pledgeStats';
+import { AxisType, LineGraph } from './Graph';
 
 function App() {
   const [ pledges, setPledges ] = useState([] as Pledge[]);
@@ -99,9 +101,7 @@ function App() {
 
   const pendingAmount = sumPledges(completedPledges) - sumPledges(livePledges) - sumPledges(overduePledges);
 
-  const interestReceived = completedPledges.reduce((total, pledge) => total + pledge.expectedInterest, 0);
-
-  // const interestRealReceived = completedRealPledges.reduce((total, pledge) => total + pledge.expectedInterest, 0);
+  const interestRealReceived = pledges.reduce((total, pledge) => total + pledge.paidInterest, 0);
 
   const currencyFormatter = new Intl.NumberFormat(undefined, { style: "currency", currency: "GBP" });
 
@@ -111,42 +111,28 @@ function App() {
     return startedPledges.some(p => (+p.endDate < now) && p.status === PledgeStatus.live);
   });
 
+  const interestPerDay = calcInterestPerDay(livePledges);
+
   const ONE_YEAR = 365.25 * 86400 * 1000;
+
+  const colourModeKeys = Object.keys(ColourMode).filter(key => isNaN(+key));
+
+  // const balance = calcAmountPledged(pledges) - calcAmountPledged(completedRealPledges) - interestRealReceived;
 
   return (
     <>
       <div style={{display:"flex"}}>
-        <div style={{width:320}}>
+        <div style={{flex:"1 0 320px"}}>
           <input type="file" onChange={handleFile} />
           <h2>All Time</h2>
           <PledgeStatsTable rows={statsRowsAll} />
-          {/* <p>Received Interest: {currencyFormatter.format(interestRealReceived)}</p> */}
+          <p>Received Interest: {currencyFormatter.format(interestRealReceived)}</p>
+          {/* <p>Balance: {currencyFormatter.format(balance)}</p> */}
           <p>Unique Projects: {projects.size}</p>
           <h2>Colour Mode</h2>
-          <label>
-            <input type="radio" name="colourMode" value={ColourMode.Solid} checked={colourMode === ColourMode.Solid} onChange={() => setColourMode(ColourMode.Solid)} />
-            Solid
-          </label>
-          <label>
-            <input type="radio" name="colourMode" value={ColourMode.Overdue} checked={colourMode === ColourMode.Overdue} onChange={() => setColourMode(ColourMode.Overdue)} />
-            Overdue
-          </label>
-          <label>
-            <input type="radio" name="colourMode" value={ColourMode.Interest} checked={colourMode === ColourMode.Interest} onChange={() => setColourMode(ColourMode.Interest)} />
-            Interest
-          </label>
-          <label>
-            <input type="radio" name="colourMode" value={ColourMode.Name} checked={colourMode === ColourMode.Name} onChange={() => setColourMode(ColourMode.Name)} />
-            Name
-          </label>
-          <label>
-            <input type="radio" name="colourMode" value={ColourMode.Age} checked={colourMode === ColourMode.Age} onChange={() => setColourMode(ColourMode.Age)} />
-            Age
-          </label>
-          <label>
-            <input type="radio" name="colourMode" value={ColourMode.Repaid} checked={colourMode === ColourMode.Repaid} onChange={() => setColourMode(ColourMode.Repaid)} />
-            Repaid
-          </label>
+          {
+            colourModeKeys.map(key => <ColourModeLabel key={key} mode={ColourMode[key as keyof typeof ColourMode]} selected={colourMode} onChange={setColourMode} />)
+          }
           <h2>Animation</h2>
           <button onClick={() => setIsPlaying(p => !p)}>{isPlaying?"Pause":"Play"}</button><br/>
           <button onClick={() => setNow(earliestStart)}>Earliest</button>
@@ -158,16 +144,30 @@ function App() {
             <input type="range" value={speed} min={0} max={10} onChange={e => setSpeed(e.target.valueAsNumber)} />
           </label>
           <p>Now: {new Date(now).toISOString().substring(0,10)}</p>
+          <p>Interest Paid: {currencyFormatter.format(calcInterestPaid(startedPledges, now))}</p>
+          <p>Interest per Day: {currencyFormatter.format(interestPerDay)}</p>
           {/* <p>Latest Start: {new Date(latestStart).toDateString()}</p> */}
           <PledgeStatsTable rows={statsRowsCurrent} />
-          <p>Received Interest: {currencyFormatter.format(interestReceived)}</p>
           <p>Unique Projects: {liveProjects.size}</p>
+          <p>Average Pledges per Project: {(livePledges.length/liveProjects.size).toFixed(2)}</p>
           {/* <p>{[...liveProjects.values()].join(";")}</p> */}
           <p>Projects Overdue: {((projectsOverdue.length/projects.size)*100).toFixed(0)}%</p>
-          <p>Overdue: {[...overdueProjects.values()].join("; ")}</p>
+          {/* <p>Overdue: {[...overdueProjects.values()].join("; ")}</p> */}
         </div>
-        <div style={{flex: 1}}>
+        <div style={{flex: "1 1 100%"}}>
           <PledgeBubbles pledges={startedPledges} pendingTotal={pendingAmount} now={now} colourMode={colourMode} />
+          <h3>Number of Pledges</h3>
+          <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => filterLivePledges(pledges, now).length} xAxisType={AxisType.Date} />
+          <h3>Live Amount Pledged</h3>
+          <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcAmountPledged(filterLivePledges(pledges, now))} xAxisType={AxisType.Date} yAxisType={AxisType.Currency} />
+          <h3>Cuml. Amount Pledged</h3>
+          <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcAmountPledged(pledges.filter(p => +p.startDate <= now))} xAxisType={AxisType.Date} yAxisType={AxisType.Currency} />
+          <h3>Weighted Interest Rate</h3>
+          <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcAvgInterestRate(filterLivePledges(pledges, now))} xAxisType={AxisType.Date} yAxisType={AxisType.Percent} />
+          {/* <h3>Cuml. Interest Paid</h3>
+          <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcInterestPaid(pledges.filter(p => +p.startDate < now), now)} xAxisType={AxisType.Date} yAxisType={AxisType.Currency} /> */}
+          <h3>Interest per Day</h3>
+          <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcInterestPerDay(filterLivePledges(pledges, now))} xAxisType={AxisType.Date} yAxisType={AxisType.Currency} />
         </div>
       </div>
       <ProjectTable pledges={pledges} now={now} />
@@ -179,4 +179,13 @@ export default App
 
 function sumPledges (pledges: Pledge[]) {
   return pledges.reduce((total, pledge) => total + pledge.amount, 0);
+}
+
+function ColourModeLabel ({ mode, selected, onChange }: { mode: ColourMode, selected: ColourMode, onChange: (mode: ColourMode) => void}) {
+  return (
+    <label style={{display:"inline-block"}}>
+      <input type="radio" name="colourMode" value={mode} checked={selected === mode} onChange={() => onChange(mode)} />
+      {ColourMode[mode]}
+    </label>
+  );
 }

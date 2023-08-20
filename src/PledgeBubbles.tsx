@@ -94,6 +94,16 @@ export function PledgeBubbles ({ pledges, pendingTotal, now, colourMode }: { ple
             return [fill, "#000"];
         }
 
+        if (colourMode === ColourMode.Duration) {
+            const minAge = 0;
+            const maxAge = ONE_YEAR * 3;
+            const duration = +pledge.endDate - +pledge.startDate;
+            const x = (duration - minAge) / (maxAge - minAge);
+            const fill = colourInterpolateHSL(x, "hsl(0deg 100% 50%)", "hsl(240deg 100% 50%)");
+
+            return [fill, "#000"];
+        }
+
         return [];
     }
 

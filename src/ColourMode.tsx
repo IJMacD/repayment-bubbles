@@ -4,5 +4,6 @@ export enum ColourMode {
   Interest,
   Name,
   Age,
-  Repaid
+  Repaid,
+  Duration,
 };

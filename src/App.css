@@ -22,3 +22,11 @@
     stroke: rgba(255,255,255,0.1);
   }
 }
+
+.ProjectTable {
+  width: 100%;
+}
+
+.ProjectTable th {
+  text-align: left;
+}
