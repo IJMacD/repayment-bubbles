@@ -1,8 +1,17 @@
 import { ColourMode } from "./ColourMode";
 import { colourInterpolateHSL } from "./colour";
+import { filterLivePledges } from "./pledgeStats";
 import { Pledge, PledgeStatus } from "./pledges";
 
-export function PledgeBubbles ({ pledges, pendingTotal, now, colourMode }: { pledges: Pledge[], pendingTotal: number, now: number, colourMode: ColourMode }) {
+type PledgeBubblesProps = {
+    pledges: Pledge[];
+    pendingTotal: number;
+    now: number;
+    colourMode: ColourMode;
+    linkProjects?: boolean;
+};
+
+export function PledgeBubbles ({ pledges, pendingTotal, now, colourMode, linkProjects = false }: PledgeBubblesProps) {
     const rings = [];
     const bubbles = [];
 
@@ -107,7 +116,26 @@ export function PledgeBubbles ({ pledges, pendingTotal, now, colourMode }: { ple
         return [];
     }
 
-    const formatter = Intl.NumberFormat([], { style: "currency", currency: "GBP" })
+    const formatter = Intl.NumberFormat([], { style: "currency", currency: "GBP" });
+
+    const livePledges = filterLivePledges(pledges, now);
+
+    let linkPath = [];
+
+    if (linkProjects) {
+        const projects = new Set(pledges.map(p => p.projectName));
+        for (const project of projects) {
+            const projectPledges = livePledges.filter(p => p.projectName === project);
+
+            if (projectPledges.length < 2) continue;
+
+            const points = projectPledges.map(p => calcPosition(+p.startDate, +p.endDate));
+
+            const path = points.reduce((path, p, i) => path + ` ${i === 0 ? "M" : "L"} ${p[0]} ${p[1]}`, "");
+
+            linkPath.push(path);
+        }
+    }
 
     for (const pledge of pledges) {
         const start = +pledge.startDate;
@@ -186,18 +214,27 @@ export function PledgeBubbles ({ pledges, pendingTotal, now, colourMode }: { ple
 
     const spiralLengths = Array.from({length:100}).map((_,i,a)=>maxSpiral*Math.pow(i/(a.length-1),2));
 
-    const sweepPositions = spiralLengths.map(duration => {
+    const nowSweepPositions = spiralLengths.map(duration => {
         const start = Math.min(realNow - duration, now);
         return calcPosition(start, realNow);
     });
 
-    const nowSweepPath = sweepPositions.reduce((path, p, i) => path += `${i===0?"M":" L"} ${p[0]} ${p[1]}`, "");
+    const sixMonthSweepPositions = spiralLengths.map(duration => {
+        const sixMonth = realNow - 6 * ONE_MONTH;
+        const start = Math.min(sixMonth - duration, now);
+        return calcPosition(start, sixMonth);
+    });
+
+    const nowSweepPath = nowSweepPositions.reduce((path, p, i) => path += `${i===0?"M":" L"} ${p[0]} ${p[1]}`, "");
+
+    const sixMonthSweepPath = sixMonthSweepPositions.reduce((path, p, i) => path += `${i===0?"M":" L"} ${p[0]} ${p[1]}`, "");
 
     return <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`}>
         <ellipse cx={overdueX} cy={overdueY} rx={overdueRadius} ry={overdueRadius} fill="red" />
         { !isNaN(pendingX) && <ellipse cx={pendingX} cy={pendingY} rx={pendingRadius} ry={pendingRadius} fill="green" /> }
         <path d={ markerPath } className="age-rings" fill="none" />
         <path d={ nowSweepPath } stroke="rgba(128,128,255,0.5)" fill="none" />
+        <path d={ sixMonthSweepPath } stroke="rgba(128,128,255,0.5)" fill="none" strokeDasharray="4 4" />
         {
             Object.entries(labels).map(([label, value]) => {
                 const radius = value * ORBIT_SCALE;
@@ -208,6 +245,7 @@ export function PledgeBubbles ({ pledges, pendingTotal, now, colourMode }: { ple
         {
             Object.values(labels).map((d, i) => makeRing(i, d))
         }
+        <path d={linkPath.join(" ")} fill="none" stroke="#000" />
         {/* { rings } */}
         { bubbles }
     </svg>;

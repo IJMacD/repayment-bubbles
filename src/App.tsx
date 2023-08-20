@@ -15,6 +15,7 @@ function App() {
   const [ isPlaying, setIsPlaying ] = useState(false);
   const [ isLooping, setIsLooping ] = useState(false);
   const [ colourMode, setColourMode ] = useState(ColourMode.Overdue);
+  const [ showProjectLinks, setShowProjectLinks ] = useState(false);
 
   async function handleFile (e: FormEvent<HTMLInputElement>) {
     if (e.currentTarget.files?.length) {
@@ -80,7 +81,7 @@ function App() {
 
   const projects = new Set(pledges.map(p => p.projectName));
   const liveProjects = new Set(livePledges.map(p => p.projectName));
-  const overdueProjects = new Set(overduePledges.map(p => p.projectName));
+  // const overdueProjects = new Set(overduePledges.map(p => p.projectName));
 
   const statsRowsAll = [
     { label: "Pledges", pledges },
@@ -129,10 +130,14 @@ function App() {
           <p>Received Interest: {currencyFormatter.format(interestRealReceived)}</p>
           {/* <p>Balance: {currencyFormatter.format(balance)}</p> */}
           <p>Unique Projects: {projects.size}</p>
-          <h2>Colour Mode</h2>
+          <h2>Bubble Options</h2>
           {
             colourModeKeys.map(key => <ColourModeLabel key={key} mode={ColourMode[key as keyof typeof ColourMode]} selected={colourMode} onChange={setColourMode} />)
           }
+          <label style={{display: "block"}}>
+            <input type="checkbox" checked={showProjectLinks} onChange={e => setShowProjectLinks(e.target.checked)} />
+            Show Project Links
+          </label>
           <h2>Animation</h2>
           <button onClick={() => setIsPlaying(p => !p)}>{isPlaying?"Pause":"Play"}</button><br/>
           <button onClick={() => setNow(earliestStart)}>Earliest</button>
@@ -155,7 +160,7 @@ function App() {
           {/* <p>Overdue: {[...overdueProjects.values()].join("; ")}</p> */}
         </div>
         <div style={{flex: "1 1 100%"}}>
-          <PledgeBubbles pledges={startedPledges} pendingTotal={pendingAmount} now={now} colourMode={colourMode} />
+          <PledgeBubbles pledges={startedPledges} pendingTotal={pendingAmount} now={now} colourMode={colourMode} linkProjects={showProjectLinks} />
           <h3>Number of Pledges</h3>
           <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => filterLivePledges(pledges, now).length} xAxisType={AxisType.Date} />
           <h3>Live Amount Pledged</h3>
