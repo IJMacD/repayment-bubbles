@@ -6,7 +6,7 @@ import { PledgeStatsTable } from './PledgeStatsTable';
 import { PledgeBubbles } from './PledgeBubbles';
 import { ProjectTable } from './ProjectTable';
 import { ColourMode } from './ColourMode';
-import { calcAmountPledged, calcAvgInterestRate, calcInterestPaid, calcInterestPerDay, filterLivePledges } from './pledgeStats';
+import { calcAmountPledged, calcAvgInterestRate, calcInterestPaid, calcInterestPerDay, filterLivePledges, getLatestInterestRate } from './pledgeStats';
 import { AxisType, LineGraph } from './Graph';
 
 function App() {
@@ -169,6 +169,8 @@ function App() {
           <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcAmountPledged(pledges.filter(p => +p.startDate <= now))} xAxisType={AxisType.Date} yAxisType={AxisType.Currency} />
           <h3>Weighted Interest Rate</h3>
           <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcAvgInterestRate(filterLivePledges(pledges, now))} xAxisType={AxisType.Date} yAxisType={AxisType.Percent} />
+          <h3>Latest Interest Rate</h3>
+          <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => getLatestInterestRate(filterLivePledges(pledges, now))} xAxisType={AxisType.Date} yAxisType={AxisType.Percent} />
           {/* <h3>Cuml. Interest Paid</h3>
           <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcInterestPaid(pledges.filter(p => +p.startDate < now), now)} xAxisType={AxisType.Date} yAxisType={AxisType.Currency} /> */}
           <h3>Interest per Day</h3>

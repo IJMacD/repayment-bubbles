@@ -56,6 +56,7 @@ export function LineGraph (
 
     const gridLinesPath = [];
     const majorGridLinesPath = [];
+    const majorLabels: [number, string][] = [];
 
     if (step > 0) {
         const xScale = viewWidth / xRange;
@@ -89,23 +90,17 @@ export function LineGraph (
             }
         }
 
-        const vGridlines = [];
-
         if (xAxisType === AxisType.Date) {
             const minOffset = xMin % ONE_MONTH;
             for (let x = xMin - minOffset + ONE_MONTH; x < xMax; x += ONE_MONTH) {
-                vGridlines.push(x);
-            }
-        }
 
-        if (vGridlines.length > 0) {
-            for (const x of vGridlines) {
                 const px = (x - xMin) * xScale;
                 const d = `M ${px} 0 L ${px} ${viewHeight}`;
                 if (x % ONE_YEAR) {
                     gridLinesPath.push(d);
                 } else {
                     majorGridLinesPath.push(d);
+                    majorLabels.push([px, new Date(x).getFullYear().toString()]);
                 }
             }
         }
@@ -136,6 +131,9 @@ export function LineGraph (
             <text x={-2} y={0} textAnchor="end" style={{fontSize:9}}>{yMaxLabel}</text>
             <text x={-2} y={viewHeight} textAnchor="end" style={{fontSize:9}}>{yMinLabel}</text>
             <text x={viewWidth+2} y={yFinalValuePY} textAnchor="start" style={{fontSize:9}}>{yFinalLabel}</text>
+            {
+                majorLabels.map(([px,label], i) => <text key={i} x={px} y={viewHeight+10} style={{fontSize:9}}>{label}</text>)
+            }
         </svg>
     );
 }

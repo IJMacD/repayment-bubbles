@@ -38,3 +38,7 @@ export function calcInterestPaid(pledges: Pledge[], now: number) {
         return total + projectProgress * pledge.paidInterest;
     }, 0);
 }
+
+export function getLatestInterestRate (pledges: Pledge[]) {
+    return pledges.at(-1)?.interestRate || 0;
+}
