@@ -39,7 +39,7 @@ export function ProjectTable ({ pledges, now }: { pledges: Pledge[], now: number
                     const livePledges = filterLivePledges(startedPledges, now);
                     const interestPerDay = calcInterestPerDay(livePledges);
 
-                    const repaidPercent = `${(paidInterest / expectedInterest * 100).toFixed()}%`;
+                    const repaidPercent = expectedInterest > 0 ? `${(paidInterest / expectedInterest * 100).toFixed()}%` : 0;
                     // const pledgeCount = projectPledges.length;
 
                     return (
@@ -48,7 +48,10 @@ export function ProjectTable ({ pledges, now }: { pledges: Pledge[], now: number
                             <td style={{color:isOverdue?"red":"initial"}}>{currencyFormatter.format(totalAmount)}</td>
                             <td>{currencyFormatter.format(expectedInterest)}</td>
                             <td>{currencyFormatter.format(paidInterest)}</td>
-                            <td>{(aprInterest*100).toFixed(1)}%</td>
+                            <td>
+                                {(aprInterest*100).toFixed(1)}%{' '}
+                                { isOverdue && <span style={{color:"red"}}>{(aprInterest*100+2).toFixed(1)}%</span> }
+                            </td>
                             <td>{interestPerDay > 0 ? currencyFormatter.format(interestPerDay) : null}</td>
                             <td><div title={repaidPercent} style={{height:8,width:repaidPercent,backgroundColor:"#333"}} /></td>
                             {/* <td>{pledgeCount}</td> */}

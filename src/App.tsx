@@ -8,6 +8,7 @@ import { ProjectTable } from './ProjectTable';
 import { ColourMode } from './ColourMode';
 import { calcAmountPledged, calcAvgInterestRate, calcInterestPaid, calcInterestPerDay, filterLivePledges, getLatestInterestRate } from './pledgeStats';
 import { AxisType, LineGraph } from './Graph';
+import { PledgeLava } from './PledgeLava';
 
 function App() {
   const [ pledges, setPledges ] = useState([] as Pledge[]);
@@ -161,6 +162,8 @@ function App() {
         </div>
         <div style={{flex: "1 1 100%"}}>
           <PledgeBubbles pledges={startedPledges} pendingTotal={pendingAmount} now={now} colourMode={colourMode} linkProjects={showProjectLinks} />
+          <h3>Pledge Lava</h3>
+          <PledgeLava pledges={startedPledges} now={now} />
           <h3>Number of Pledges</h3>
           <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => filterLivePledges(pledges, now).length} xAxisType={AxisType.Date} />
           <h3>Live Amount Pledged</h3>
