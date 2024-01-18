@@ -53,7 +53,7 @@ export function ProjectTable ({ pledges, now }: { pledges: Pledge[], now: number
                                 { isOverdue && <span style={{color:"red"}}>{(aprInterest*100+2).toFixed(1)}%</span> }
                             </td>
                             <td>{interestPerDay > 0 ? currencyFormatter.format(interestPerDay) : null}</td>
-                            <td><div title={repaidPercent} style={{height:8,width:repaidPercent,backgroundColor:"#333"}} /></td>
+                            <td><div title={repaidPercent||""} style={{height:8,width:repaidPercent,backgroundColor:"#333"}} /></td>
                             {/* <td>{pledgeCount}</td> */}
 
                             <td>{

@@ -154,7 +154,7 @@ export function PledgeLavaBasic ({ pledges, now }: PledgeLavaProps) {
             if (+bucket < minBucket) minBucket = +bucket;
             if (+bucket > maxBucket) maxBucket = +bucket;
             // Preserve negative zero
-            const prefix = due > 0 && bucket === 0 ? "-" : "";
+            const prefix = due < 0 && bucket === 0 ? "-" : "";
             const bucketID = prefix + bucket;
             if (!buckets[bucketID]) buckets[bucketID] = [];
             buckets[bucketID].push(pledge);
@@ -195,9 +195,14 @@ export function PledgeLavaBasic ({ pledges, now }: PledgeLavaProps) {
                         overflow: "hidden"
                     };
 
+                    let label = (+bucket + 1) * 3;
+                    if (bucket[0] === "-") {
+                        label = (+bucket - 1) * 3;
+                    }
+
                     return (
-                        <div key={bucket} title={`${(+bucket+1) * 3} months £${total.toFixed(2)}`} style={barStyle}>
-                            {`${(+bucket+1) * 3} months`}
+                        <div key={bucket} title={`${label} months £${total.toFixed(2)}`} style={barStyle}>
+                            {`${label} months`}
                         </div>
                     );
                 })
