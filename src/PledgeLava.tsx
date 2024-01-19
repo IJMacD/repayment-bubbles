@@ -6,7 +6,7 @@ interface PledgeLavaProps {
     now: number;
 }
 
-export const PledgeLava = PledgeLavaBasic;
+export const PledgeLava = PledgeLavaCanvas;
 
 export function PledgeLavaCanvas ({ pledges, now }: PledgeLavaProps) {
     const canvasRef: React.MutableRefObject<HTMLCanvasElement|null> = useRef(null);
@@ -39,7 +39,8 @@ export function PledgeLavaCanvas ({ pledges, now }: PledgeLavaProps) {
         }
         bucketIndex.reverse();
 
-        const maxVal = 6000;
+        // const maxVal = Object.values(buckets).reduce((max, pledges) => Math.max(max, pledges.reduce((total, pledge) => total + pledge.amount, 0)), 0);
+        const maxVal = 7000;
         const width = 300;
         const barHeight = 20;
         const height = bucketIndex.length * barHeight;
@@ -61,14 +62,45 @@ export function PledgeLavaCanvas ({ pledges, now }: PledgeLavaProps) {
             barHeight,
         };
 
+        ctx.translate(0, barHeight/2);
+
+        // Horizontal grid lines
+        ctx.beginPath();
+        for (let i = 0; i < bucketIndex.length; i++) {
+            ctx.moveTo(0, barHeight*(i+0.5));
+            ctx.lineTo(width, barHeight*(i+0.5));
+        }
+        ctx.strokeStyle = "#CCC";
+        ctx.stroke();
+
+        // Vertical grid lines
+        ctx.beginPath();
+        const cx = width / 2;
+        for (let i = 0; i < maxVal/2; i += 1000) {
+            ctx.moveTo(cx - i * context.xScale, -barHeight);
+            ctx.lineTo(cx - i * context.xScale, height);
+            ctx.moveTo(cx + i * context.xScale, -barHeight);
+            ctx.lineTo(cx + i * context.xScale, height);
+        }
+        ctx.strokeStyle = "#CCC";
+        ctx.stroke();
+
         // Overdue
-        context.yOffset = drawBulges(ctx, buckets, minBucket, 0, context, "#F00");
+        context.yOffset = drawBulges(ctx, buckets, minBucket, 0, context, "#F00") - barHeight;
+
+        // Now line
+        ctx.beginPath();
+        ctx.moveTo(0, context.yOffset+barHeight/2);
+        ctx.lineTo(width, context.yOffset+barHeight/2);
+        ctx.strokeStyle = "#999";
+        ctx.stroke();
+
         // Due
         drawBulges(ctx, buckets, 0, maxBucket, context, "#0C0");
 
     }, [pledges]);
 
-    return <canvas ref={canvasRef} />;
+    return <canvas ref={canvasRef} style={{display:"block", margin: "0 auto"}} />;
 }
 
 function drawBulges(
@@ -98,6 +130,10 @@ function drawBulges(
         widths.push(total * xScale);
     }
 
+    if (widths.length < 2) {
+        return 0;
+    }
+
     ctx.beginPath();
 
     let y = yOffset;
@@ -110,15 +146,23 @@ function drawBulges(
     for (let i = 0; i < widths.length; i++) {
         const barWidth = widths[i];
         const x = cx - barWidth / 2;
-        ctx.lineTo(x, y);
+        // ctx.lineTo(x, y);
+        const prevX = i > 0 ? cx - widths[i-1]/2 : cx;
+        const midY = y - barHeight / 2;
+        ctx.bezierCurveTo(prevX, midY, x, midY, x, y);
         y += barHeight;
     }
 
     y -= 0.5 * barHeight;
 
     // Centre
-    ctx.lineTo(cx, y);
+    // ctx.lineTo(cx, y);
+    let prevX = cx - widths[widths.length - 1]/2;
+    let midY = y ;
+    ctx.quadraticCurveTo(prevX, midY, cx, y);
+    // ctx.bezierCurveTo(prevX, midY, x, midY, x, y);
 
+    // Store for later
     let maxY = y;
 
     // Up right side
@@ -126,15 +170,29 @@ function drawBulges(
     for (let i = widths.length - 1; i >= 0; i--) {
         const barWidth = widths[i];
         const x = cx + barWidth / 2;
-        ctx.lineTo(x, y);
+        const prevX = cx + widths[i+1]/2;
+        const midY = y + barHeight / 2;
+        if (i === widths.length - 1) {
+            // ctx.lineTo(x, y);
+            ctx.quadraticCurveTo(x, midY, x, y);
+        }
+        else {
+            ctx.bezierCurveTo(prevX, midY, x, midY, x, y);
+        }
         y -= barHeight;
     }
 
     ctx.fillStyle = fillColour;
 
     y += 0.5 * barHeight;
+    // y = context.yOffset;
+
     // Centre
-    ctx.lineTo(cx, y);
+    // ctx.lineTo(cx, y);
+    prevX = cx + widths[0]/2;
+    midY = y ;
+    ctx.quadraticCurveTo(prevX, midY, cx, y);
+    // ctx.bezierCurveTo(prevX, midY, cx, midY, cx, y);
 
     ctx.fill();
 

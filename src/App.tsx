@@ -6,9 +6,9 @@ import { PledgeStatsTable } from './PledgeStatsTable';
 import { PledgeBubbles } from './PledgeBubbles';
 import { ProjectTable } from './ProjectTable';
 import { ColourMode } from './ColourMode';
-import { calcAmountPledged, calcAvgInterestRate, calcInterestPaid, calcInterestPerDay, filterLivePledges, getLatestInterestRate } from './pledgeStats';
+import { calcAmountPledged, calcAmountUnrepaid, calcAvgInterestRate, calcInterestPaid, calcInterestPerDay, calcInterestPerDayContracted, calcInterestPerDaySpeculative, filterLivePledges, getLatestInterestRate } from './pledgeStats';
 import { AxisType, LineGraph } from './Graph';
-import { PledgeLava } from './PledgeLava';
+import { PledgeLavaBasic, PledgeLavaCanvas } from './PledgeLava';
 
 function App() {
   const [ pledges, setPledges ] = useState([] as Pledge[]);
@@ -113,7 +113,7 @@ function App() {
     return startedPledges.some(p => (+p.endDate < now) && p.status === PledgeStatus.live);
   });
 
-  const interestPerDay = calcInterestPerDay(livePledges);
+  const interestPerDay = calcInterestPerDay(livePledges, now);
 
   const ONE_YEAR = 365.25 * 86400 * 1000;
 
@@ -163,21 +163,25 @@ function App() {
         <div style={{flex: "1 1 100%"}}>
           <PledgeBubbles pledges={startedPledges} pendingTotal={pendingAmount} now={now} colourMode={colourMode} linkProjects={showProjectLinks} />
           <h3>Pledge Lava</h3>
-          <PledgeLava pledges={startedPledges} now={now} />
+          {/* <PledgeLavaBasic pledges={startedPledges} now={now} /> */}
+          <PledgeLavaCanvas pledges={startedPledges} now={now} />
           <h3>Number of Pledges</h3>
           <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => filterLivePledges(pledges, now).length} xAxisType={AxisType.Date} />
           <h3>Live Amount Pledged</h3>
-          <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcAmountPledged(filterLivePledges(pledges, now))} xAxisType={AxisType.Date} yAxisType={AxisType.Currency} />
+          <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcAmountUnrepaid(filterLivePledges(pledges, now))} xAxisType={AxisType.Date} yAxisType={AxisType.Currency} />
+          <p style={{color:"grey",fontStyle:"italic"}}>* Estimated</p>
           <h3>Cuml. Amount Pledged</h3>
           <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcAmountPledged(pledges.filter(p => +p.startDate <= now))} xAxisType={AxisType.Date} yAxisType={AxisType.Currency} />
           <h3>Weighted Interest Rate</h3>
           <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcAvgInterestRate(filterLivePledges(pledges, now))} xAxisType={AxisType.Date} yAxisType={AxisType.Percent} />
           <h3>Latest Interest Rate</h3>
           <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => getLatestInterestRate(filterLivePledges(pledges, now))} xAxisType={AxisType.Date} yAxisType={AxisType.Percent} />
-          {/* <h3>Cuml. Interest Paid</h3>
-          <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcInterestPaid(pledges.filter(p => +p.startDate < now), now)} xAxisType={AxisType.Date} yAxisType={AxisType.Currency} /> */}
-          <h3>Interest per Day</h3>
-          <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcInterestPerDay(filterLivePledges(pledges, now))} xAxisType={AxisType.Date} yAxisType={AxisType.Currency} />
+          <h3>Cuml. Interest Paid</h3>
+          <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcInterestPaid(pledges.filter(p => +p.startDate < now), now)} xAxisType={AxisType.Date} yAxisType={AxisType.Currency} />
+          <h3>Interest per Day (Paid)</h3>
+          <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcInterestPerDay(filterLivePledges(pledges, now), now)} xAxisType={AxisType.Date} yAxisType={AxisType.Currency} />
+          <h3>Interest per Day (Contracted)</h3>
+          <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcInterestPerDayContracted(filterLivePledges(pledges, now), now)} xAxisType={AxisType.Date} yAxisType={AxisType.Currency} />
         </div>
       </div>
       <ProjectTable pledges={pledges} now={now} />

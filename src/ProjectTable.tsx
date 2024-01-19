@@ -1,4 +1,4 @@
-import { filterLivePledges, calcInterestPerDay, calcInterestPaid } from './pledgeStats';
+import { filterLivePledges, calcInterestPerDay, calcInterestPaid, calcInterestPerDayContracted } from './pledgeStats';
 import { Pledge, PledgeStatus } from './pledges';
 
 export function ProjectTable ({ pledges, now }: { pledges: Pledge[], now: number }) {
@@ -14,7 +14,8 @@ export function ProjectTable ({ pledges, now }: { pledges: Pledge[], now: number
                     <th>Expected Interest</th>
                     <th>Paid Interest</th>
                     <th>A.P.R.</th>
-                    <th>Interest per Day</th>
+                    {/* <th>Interest per Day</th> */}
+                    <th>Interest per Day (Contracted)</th>
                     <th>Repaid Fraction</th>
                     {/* <th>Pledge Count</th> */}
                     <th>Pledges</th>
@@ -37,7 +38,8 @@ export function ProjectTable ({ pledges, now }: { pledges: Pledge[], now: number
                     const isOverdue = startedPledges.some(p => (+p.endDate < now) && p.status === PledgeStatus.live);
 
                     const livePledges = filterLivePledges(startedPledges, now);
-                    const interestPerDay = calcInterestPerDay(livePledges);
+                    // const interestPerDay = calcInterestPerDay(livePledges);
+                    const interestPerDayContracted = calcInterestPerDayContracted(livePledges, now);
 
                     const repaidPercent = expectedInterest > 0 ? `${(paidInterest / expectedInterest * 100).toFixed()}%` : 0;
                     // const pledgeCount = projectPledges.length;
@@ -52,7 +54,8 @@ export function ProjectTable ({ pledges, now }: { pledges: Pledge[], now: number
                                 {(aprInterest*100).toFixed(1)}%{' '}
                                 { isOverdue && <span style={{color:"red"}}>{(aprInterest*100+2).toFixed(1)}%</span> }
                             </td>
-                            <td>{interestPerDay > 0 ? currencyFormatter.format(interestPerDay) : null}</td>
+                            {/* <td>{interestPerDay > 0 ? currencyFormatter.format(interestPerDay) : null}</td> */}
+                            <td>{interestPerDayContracted > 0 ? currencyFormatter.format(interestPerDayContracted) : null}</td>
                             <td><div title={repaidPercent||""} style={{height:8,width:repaidPercent,backgroundColor:"#333"}} /></td>
                             {/* <td>{pledgeCount}</td> */}
 
