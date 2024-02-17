@@ -1,7 +1,7 @@
-import { filterLivePledges, calcInterestPerDay, calcInterestPaid, calcInterestPerDayContracted } from './pledgeStats';
+import { filterLivePledges, calcInterestPaid, calcInterestPerDayContracted } from './pledgeStats';
 import { Pledge, PledgeStatus } from './pledges';
 
-export function ProjectTable ({ pledges, now }: { pledges: Pledge[], now: number }) {
+export function ProjectTable({ pledges, now }: { pledges: Pledge[], now: number }) {
     const projects = new Set(pledges.map(p => p.projectName));
     const currencyFormatter = new Intl.NumberFormat(undefined, { style: "currency", currency: "GBP" });
 
@@ -22,62 +22,66 @@ export function ProjectTable ({ pledges, now }: { pledges: Pledge[], now: number
                 </tr>
             </thead>
             <tbody>
-            {
-                [...projects].map(projectName => {
-                    const projectPledges = pledges.filter(p => p.projectName === projectName);
-                    const startedPledges = projectPledges.filter(p => +p.startDate < now);
+                {
+                    [...projects].map(projectName => {
+                        const projectPledges = pledges.filter(p => p.projectName === projectName);
+                        const startedPledges = projectPledges.filter(p => +p.startDate < now);
 
-                    if (startedPledges.length === 0) {
-                        return null;
-                    }
+                        if (startedPledges.length === 0) {
+                            return null;
+                        }
 
-                    const totalAmount = startedPledges.reduce((total, pledge) => total + pledge.amount, 0);
-                    const expectedInterest = startedPledges.reduce((total, pledge) => total + pledge.expectedInterest, 0);
-                    const paidInterest = calcInterestPaid(startedPledges, now);
-                    const aprInterest = startedPledges.reduce((total, pledge) => total + pledge.interestRate * pledge.amount, 0) / totalAmount;
-                    const isOverdue = startedPledges.some(p => (+p.endDate < now) && p.status === PledgeStatus.live);
+                        const totalAmount = startedPledges.reduce((total, pledge) => total + pledge.amount, 0);
+                        const expectedInterest = startedPledges.reduce((total, pledge) => total + pledge.expectedInterest, 0);
+                        const paidInterest = calcInterestPaid(startedPledges, now);
+                        const aprInterest = startedPledges.reduce((total, pledge) => total + pledge.interestRate * pledge.amount, 0) / totalAmount;
+                        const isOverdue = startedPledges.some(p => (+p.endDate < now) && p.status === PledgeStatus.live);
 
-                    const livePledges = filterLivePledges(startedPledges, now);
-                    // const interestPerDay = calcInterestPerDay(livePledges);
-                    const interestPerDayContracted = calcInterestPerDayContracted(livePledges, now);
+                        const livePledges = filterLivePledges(startedPledges, now);
+                        // const interestPerDay = calcInterestPerDay(livePledges);
+                        const interestPerDayContracted = calcInterestPerDayContracted(livePledges, now);
 
-                    const repaidPercent = expectedInterest > 0 ? `${(paidInterest / expectedInterest * 100).toFixed()}%` : 0;
-                    // const pledgeCount = projectPledges.length;
+                        const repaidPercent = expectedInterest > 0 ? `${(paidInterest / expectedInterest * 100).toFixed()}%` : 0;
+                        const unrepaidPercent = expectedInterest > 0 ? `${((1 - paidInterest / expectedInterest) * 100).toFixed()}%` : 0;
+                        // const pledgeCount = projectPledges.length;
 
-                    return (
-                        <tr key={projectName}>
-                            <td style={{color:isOverdue?"red":"initial"}}>{projectName}</td>
-                            <td style={{color:isOverdue?"red":"initial"}}>{currencyFormatter.format(totalAmount)}</td>
-                            <td>{currencyFormatter.format(expectedInterest)}</td>
-                            <td>{currencyFormatter.format(paidInterest)}</td>
-                            <td>
-                                {(aprInterest*100).toFixed(1)}%{' '}
-                                { isOverdue && <span style={{color:"red"}}>{(aprInterest*100+2).toFixed(1)}%</span> }
-                            </td>
-                            {/* <td>{interestPerDay > 0 ? currencyFormatter.format(interestPerDay) : null}</td> */}
-                            <td>{interestPerDayContracted > 0 ? currencyFormatter.format(interestPerDayContracted) : null}</td>
-                            <td><div title={repaidPercent||""} style={{height:8,width:repaidPercent,backgroundColor:"#333"}} /></td>
-                            {/* <td>{pledgeCount}</td> */}
+                        return (
+                            <tr key={projectName}>
+                                <td style={{ color: isOverdue ? "red" : "initial" }}>{projectName}</td>
+                                <td style={{ color: isOverdue ? "red" : "initial" }}>{currencyFormatter.format(totalAmount)}</td>
+                                <td>{currencyFormatter.format(expectedInterest)}</td>
+                                <td>{currencyFormatter.format(paidInterest)}</td>
+                                <td>
+                                    {(aprInterest * 100).toFixed(1)}%{' '}
+                                    {isOverdue && <span style={{ color: "red" }}>{(aprInterest * 100 + 2).toFixed(1)}%</span>}
+                                </td>
+                                {/* <td>{interestPerDay > 0 ? currencyFormatter.format(interestPerDay) : null}</td> */}
+                                <td>{interestPerDayContracted > 0 ? currencyFormatter.format(interestPerDayContracted) : null}</td>
+                                <td style={{ display: "flex" }}>
+                                    <div title={repaidPercent || ""} style={{ height: 8, width: repaidPercent, backgroundColor: repaidPercent === "100%" ? "#383" : "#333" }} />
+                                    <div title={repaidPercent || ""} style={{ height: 8, width: unrepaidPercent, backgroundColor: "#FDD" }} />
+                                </td>
+                                {/* <td>{pledgeCount}</td> */}
 
-                            <td>{
-                                projectPledges.map((p, i) => {
-                                    const isStarted = +p.startDate < now;
-                                    const isOverdue = (+p.endDate < now) && p.status === PledgeStatus.live;
+                                <td>{
+                                    projectPledges.map((p, i) => {
+                                        const isStarted = +p.startDate < now;
+                                        const isOverdue = (+p.endDate < now) && p.status === PledgeStatus.live;
 
-                                    if (!isStarted) return null;
+                                        if (!isStarted) return null;
 
-                                    return (
-                                        <span key={i} style={{opacity:isStarted?1:0.5,color:isOverdue?"red":"initial",marginLeft:"0.25em"}}>
-                                            {currencyFormatter.format(p.amount)}{' '}
-                                                <span style={{fontSize: "0.7em"}}>@ {(p.interestRate*100).toFixed(1)}%</span>
-                                        </span>
-                                    );
-                                })
-                            }</td>
-                        </tr>
-                    );
-                })
-            }
+                                        return (
+                                            <span key={i} style={{ opacity: isStarted ? 1 : 0.5, color: isOverdue ? "red" : "initial", marginLeft: "0.25em" }}>
+                                                {currencyFormatter.format(p.amount)}{' '}
+                                                <span style={{ fontSize: "0.7em" }}>@ {(p.interestRate * 100).toFixed(1)}%</span>
+                                            </span>
+                                        );
+                                    })
+                                }</td>
+                            </tr>
+                        );
+                    })
+                }
             </tbody>
         </table>
     );

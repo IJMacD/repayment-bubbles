@@ -10,7 +10,7 @@
 }
 
 .age-label {
-  fill: rgba(0,0,0,0.5);
+  fill: rgba(0, 0, 0, 0.5);
 }
 
 @media dark-mode {
@@ -19,7 +19,7 @@
   }
 
   .age-rings {
-    stroke: rgba(255,255,255,0.1);
+    stroke: rgba(255, 255, 255, 0.1);
   }
 }
 
@@ -27,6 +27,16 @@
   width: 100%;
 }
 
+.ProjectTable thead {
+  position: sticky;
+  top: 0;
+  background-color: white;
+}
+
 .ProjectTable th {
   text-align: left;
+}
+
+.ProjectTable td {
+  border-top: 1px dashed #CCC;
 }

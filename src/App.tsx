@@ -6,19 +6,20 @@ import { PledgeStatsTable } from './PledgeStatsTable';
 import { PledgeBubbles } from './PledgeBubbles';
 import { ProjectTable } from './ProjectTable';
 import { ColourMode } from './ColourMode';
-import { calcAmountPledged, calcAmountUnrepaid, calcAvgInterestRate, calcInterestPaid, calcInterestPerDay, calcInterestPerDayContracted, calcInterestPerDaySpeculative, filterLivePledges, getLatestInterestRate } from './pledgeStats';
-import { AxisType, LineGraph } from './Graph';
-import { PledgeLavaBasic, PledgeLavaCanvas } from './PledgeLava';
+import { calcAmountPledged, calcAmountUnrepaid, calcAvgInterestRate, calcInterestPaid, calcInterestPerDay, calcInterestPerDayContracted, filterLivePledges, getLatestInterestRate } from './pledgeStats';
+import { AxisType, LineGraph } from './LineGraph';
+import { PledgeLavaCanvas } from './PledgeLava';
+import { Histogram } from './Histogram';
 
 function App() {
-  const [ pledges, setPledges ] = useState([] as Pledge[]);
-  const [ now, setNow ] = useState(Date.now());
-  const [ isPlaying, setIsPlaying ] = useState(false);
-  const [ isLooping, setIsLooping ] = useState(false);
-  const [ colourMode, setColourMode ] = useState(ColourMode.Overdue);
-  const [ showProjectLinks, setShowProjectLinks ] = useState(false);
+  const [pledges, setPledges] = useState([] as Pledge[]);
+  const [now, setNow] = useState(Date.now());
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLooping, setIsLooping] = useState(false);
+  const [colourMode, setColourMode] = useState(ColourMode.Overdue);
+  const [showProjectLinks, setShowProjectLinks] = useState(false);
 
-  async function handleFile (e: FormEvent<HTMLInputElement>) {
+  async function handleFile(e: FormEvent<HTMLInputElement>) {
     if (e.currentTarget.files?.length) {
       const file = e.currentTarget.files[0];
       e.currentTarget.value = "";
@@ -32,7 +33,7 @@ function App() {
   const earliestStart = Math.min(...pledges.map(p => +p.startDate));
   const latestStart = Math.max(...pledges.map(p => +p.startDate));
 
-  const [ speed, setSpeed ] = useState(1);
+  const [speed, setSpeed] = useState(1);
 
   useEffect(() => {
     const delta = 100;
@@ -113,7 +114,7 @@ function App() {
     return startedPledges.some(p => (+p.endDate < now) && p.status === PledgeStatus.live);
   });
 
-  const interestPerDay = calcInterestPerDay(livePledges, now);
+  const interestPerDay = calcInterestPerDay(livePledges);
 
   const ONE_YEAR = 365.25 * 86400 * 1000;
 
@@ -123,8 +124,8 @@ function App() {
 
   return (
     <>
-      <div style={{display:"flex"}}>
-        <div style={{flex:"1 0 320px"}}>
+      <div style={{ display: "flex" }}>
+        <div style={{ flex: "1 0 320px" }}>
           <input type="file" onChange={handleFile} />
           <h2>All Time</h2>
           <PledgeStatsTable rows={statsRowsAll} />
@@ -135,41 +136,47 @@ function App() {
           {
             colourModeKeys.map(key => <ColourModeLabel key={key} mode={ColourMode[key as keyof typeof ColourMode]} selected={colourMode} onChange={setColourMode} />)
           }
-          <label style={{display: "block"}}>
+          <label style={{ display: "block" }}>
             <input type="checkbox" checked={showProjectLinks} onChange={e => setShowProjectLinks(e.target.checked)} />
             Show Project Links
           </label>
           <h2>Animation</h2>
-          <button onClick={() => setIsPlaying(p => !p)}>{isPlaying?"Pause":"Play"}</button><br/>
+          <button onClick={() => setIsPlaying(p => !p)}>{isPlaying ? "Pause" : "Play"}</button><br />
           <button onClick={() => setNow(earliestStart)}>Earliest</button>
           <button onClick={() => setNow(now => now - ONE_YEAR)}>- One Year</button>
           <button onClick={() => setNow(Date.now())}>Now</button>
-          <label style={{display:"block"}}>Loop: <input type="checkbox" checked={isLooping} onChange={e => setIsLooping(e.target.checked)} /></label>
-          <label style={{display:"block"}}>
+          <label style={{ display: "block" }}>Loop: <input type="checkbox" checked={isLooping} onChange={e => setIsLooping(e.target.checked)} /></label>
+          <label style={{ display: "block" }}>
             Speed:{' '}
             <input type="range" value={speed} min={0} max={10} onChange={e => setSpeed(e.target.valueAsNumber)} />
           </label>
-          <p>Now: {new Date(now).toISOString().substring(0,10)}</p>
+          <p>Now: {new Date(now).toISOString().substring(0, 10)}</p>
           <p>Interest Paid: {currencyFormatter.format(calcInterestPaid(startedPledges, now))}</p>
           <p>Interest per Day: {currencyFormatter.format(interestPerDay)}</p>
           {/* <p>Latest Start: {new Date(latestStart).toDateString()}</p> */}
           <PledgeStatsTable rows={statsRowsCurrent} />
           <p>Unique Projects: {liveProjects.size}</p>
-          <p>Average Pledges per Project: {(livePledges.length/liveProjects.size).toFixed(2)}</p>
+          <p>Average Pledges per Project: {(livePledges.length / liveProjects.size).toFixed(2)}</p>
           {/* <p>{[...liveProjects.values()].join(";")}</p> */}
-          <p>Projects Overdue: {((projectsOverdue.length/projects.size)*100).toFixed(0)}%</p>
+          <p>Projects Overdue: {((projectsOverdue.length / projects.size) * 100).toFixed(0)}%</p>
           {/* <p>Overdue: {[...overdueProjects.values()].join("; ")}</p> */}
         </div>
-        <div style={{flex: "1 1 100%"}}>
+        <div style={{ flex: "1 1 100%" }}>
           <PledgeBubbles pledges={startedPledges} pendingTotal={pendingAmount} now={now} colourMode={colourMode} linkProjects={showProjectLinks} />
           <h3>Pledge Lava</h3>
           {/* <PledgeLavaBasic pledges={startedPledges} now={now} /> */}
           <PledgeLavaCanvas pledges={startedPledges} now={now} />
           <h3>Number of Pledges</h3>
           <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => filterLivePledges(pledges, now).length} xAxisType={AxisType.Date} />
+          <h3>Number of Projects</h3>
+          <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => new Set(filterLivePledges(pledges, now).map(p => p.projectName)).size} xAxisType={AxisType.Date} />
+          <h3>Pledge Size Distribution</h3>
+          <Histogram width={800} height={250} values={filterLivePledges(pledges, now).map(p => p.amount)} bucketSize={100} xAxisType={AxisType.Currency} />
+          <h3>Pledge Size Distribution (Area)</h3>
+          <Histogram width={800} height={250} values={filterLivePledges(pledges, now).map(p => p.amount)} bucketSize={100} xAxisType={AxisType.Currency} proportionalMode />
           <h3>Live Amount Pledged</h3>
           <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcAmountUnrepaid(filterLivePledges(pledges, now))} xAxisType={AxisType.Date} yAxisType={AxisType.Currency} />
-          <p style={{color:"grey",fontStyle:"italic"}}>* Estimated</p>
+          <p style={{ color: "grey", fontStyle: "italic" }}>* Estimated</p>
           <h3>Cuml. Amount Pledged</h3>
           <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcAmountPledged(pledges.filter(p => +p.startDate <= now))} xAxisType={AxisType.Date} yAxisType={AxisType.Currency} />
           <h3>Weighted Interest Rate</h3>
@@ -179,7 +186,7 @@ function App() {
           <h3>Cuml. Interest Paid</h3>
           <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcInterestPaid(pledges.filter(p => +p.startDate < now), now)} xAxisType={AxisType.Date} yAxisType={AxisType.Currency} />
           <h3>Interest per Day (Paid)</h3>
-          <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcInterestPerDay(filterLivePledges(pledges, now), now)} xAxisType={AxisType.Date} yAxisType={AxisType.Currency} />
+          <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcInterestPerDay(filterLivePledges(pledges, now))} xAxisType={AxisType.Date} yAxisType={AxisType.Currency} />
           <h3>Interest per Day (Contracted)</h3>
           <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcInterestPerDayContracted(filterLivePledges(pledges, now), now)} xAxisType={AxisType.Date} yAxisType={AxisType.Currency} />
         </div>
@@ -191,13 +198,13 @@ function App() {
 
 export default App
 
-function sumPledges (pledges: Pledge[]) {
+function sumPledges(pledges: Pledge[]) {
   return pledges.reduce((total, pledge) => total + pledge.amount, 0);
 }
 
-function ColourModeLabel ({ mode, selected, onChange }: { mode: ColourMode, selected: ColourMode, onChange: (mode: ColourMode) => void}) {
+function ColourModeLabel({ mode, selected, onChange }: { mode: ColourMode, selected: ColourMode, onChange: (mode: ColourMode) => void }) {
   return (
-    <label style={{display:"inline-block"}}>
+    <label style={{ display: "inline-block" }}>
       <input type="radio" name="colourMode" value={mode} checked={selected === mode} onChange={() => onChange(mode)} />
       {ColourMode[mode]}
     </label>
