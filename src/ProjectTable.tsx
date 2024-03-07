@@ -57,9 +57,9 @@ export function ProjectTable({ pledges, now }: { pledges: Pledge[], now: number 
                                 </td>
                                 {/* <td>{interestPerDay > 0 ? currencyFormatter.format(interestPerDay) : null}</td> */}
                                 <td>{interestPerDayContracted > 0 ? currencyFormatter.format(interestPerDayContracted) : null}</td>
-                                <td style={{ display: "flex" }}>
+                                <td style={{ display: "flex", padding: "10px 0 8px" }}>
                                     <div title={repaidPercent || ""} style={{ height: 8, width: repaidPercent, backgroundColor: repaidPercent === "100%" ? "#383" : "#333" }} />
-                                    <div title={repaidPercent || ""} style={{ height: 8, width: unrepaidPercent, backgroundColor: "#FDD" }} />
+                                    <div title={repaidPercent || ""} style={{ height: 8, width: unrepaidPercent, backgroundColor: isOverdue ? "#FDD" : "#DDD" }} />
                                 </td>
                                 {/* <td>{pledgeCount}</td> */}
 
