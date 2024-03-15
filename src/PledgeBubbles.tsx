@@ -11,7 +11,7 @@ type PledgeBubblesProps = {
     linkProjects?: boolean;
 };
 
-export function PledgeBubbles ({ pledges, pendingTotal, now, colourMode, linkProjects = false }: PledgeBubblesProps) {
+export function PledgeBubbles({ pledges, pendingTotal, now, colourMode, linkProjects = false }: PledgeBubblesProps) {
     const rings = [];
     const bubbles = [];
 
@@ -30,14 +30,14 @@ export function PledgeBubbles ({ pledges, pendingTotal, now, colourMode, linkPro
 
     const cx = WIDTH / 2;
 
-    function makeRing (i: number, duration: number) {
+    function makeRing(i: number, duration: number) {
         const orbitRadius = duration * ORBIT_SCALE;
         const cy = MARGIN + orbitRadius;
 
-        return <ellipse key={i} cx={500} cy={cy} rx={orbitRadius} ry={orbitRadius} className="age-rings" fill="none" />;
+        return <ellipse key={i} cx={500} cy={HEIGHT - cy} rx={orbitRadius} ry={orbitRadius} className="age-rings" fill="none" />;
     }
 
-    function calcPosition (start: number, end: number) {
+    function calcPosition(start: number, end: number) {
         const duration = Math.abs(end - start);
         const orbitRadius = duration * ORBIT_SCALE;
         const cy = MARGIN + orbitRadius;
@@ -46,18 +46,18 @@ export function PledgeBubbles ({ pledges, pendingTotal, now, colourMode, linkPro
         const durationFraction = Math.min(actualFraction, 1);
         const theta = durationFraction * Math.PI * 2;
         const x = (actualFraction < 1) ?
-            cx + orbitRadius * Math.sin(theta)
-            : cx + (now - end) * ORBIT_SCALE;
+            cx - orbitRadius * Math.sin(theta)
+            : cx - (now - end) * ORBIT_SCALE;
         const y = (actualFraction < 1) ?
-            cy - orbitRadius * Math.cos(theta)
-            : MARGIN;
+            HEIGHT - (cy - orbitRadius * Math.cos(theta))
+            : HEIGHT - MARGIN;
 
         return [x, y];
     }
 
-    function getColour (colourMode: ColourMode, pledge: Pledge) {
+    function getColour(colourMode: ColourMode, pledge: Pledge) {
         if (colourMode === ColourMode.Solid) {
-            return [ "green", "darkgreen" ];
+            return ["green", "darkgreen"];
         }
 
         if (colourMode === ColourMode.Overdue) {
@@ -160,7 +160,7 @@ export function PledgeBubbles ({ pledges, pendingTotal, now, colourMode, linkPro
 
         const ring = makeRing(i, duration);
 
-        const [ fill, stroke ] = getColour(colourMode, pledge);
+        const [fill, stroke] = getColour(colourMode, pledge);
 
         rings.push(ring);
         bubbles.push(
@@ -172,20 +172,20 @@ export function PledgeBubbles ({ pledges, pendingTotal, now, colourMode, linkPro
                 stroke={stroke}
                 strokeWidth={interestAmount}
             >
-                <title>{pledge.projectName}{"\n"}{formatter.format(pledge.amount)} {(pledge.interestRate*100).toFixed(1)}%</title>
+                <title>{pledge.projectName}{"\n"}{formatter.format(pledge.amount)} {(pledge.interestRate * 100).toFixed(1)}%</title>
             </ellipse>
         );
 
         i++;
     }
 
-    const markerPath = Array.from({length: 26}).map((_, i) => {
+    const markerPath = Array.from({ length: 26 }).map((_, i) => {
         const w = 10;
         const x = cx - w / 2;
         const value = i * ONE_MONTH;
         const radius = value * ORBIT_SCALE;
         const y = MARGIN + radius * 2;
-        return `M ${x} ${y} h ${w}`;
+        return `M ${x} ${HEIGHT - y} h ${w}`;
     }).join(" ");
 
     const overdueTotal = ACCUMULATE_OVERDUE ?
@@ -212,7 +212,7 @@ export function PledgeBubbles ({ pledges, pendingTotal, now, colourMode, linkPro
 
     const maxSpiral = ONE_YEAR * 3;
 
-    const spiralLengths = Array.from({length:100}).map((_,i,a)=>maxSpiral*Math.pow(i/(a.length-1),2));
+    const spiralLengths = Array.from({ length: 100 }).map((_, i, a) => maxSpiral * Math.pow(i / (a.length - 1), 2));
 
     const nowSweepPositions = spiralLengths.map(duration => {
         const start = Math.min(realNow - duration, now);
@@ -225,21 +225,21 @@ export function PledgeBubbles ({ pledges, pendingTotal, now, colourMode, linkPro
         return calcPosition(start, sixMonth);
     });
 
-    const nowSweepPath = nowSweepPositions.reduce((path, p, i) => path += `${i===0?"M":" L"} ${p[0]} ${p[1]}`, "");
+    const nowSweepPath = nowSweepPositions.reduce((path, p, i) => path += `${i === 0 ? "M" : " L"} ${p[0]} ${p[1]}`, "");
 
-    const sixMonthSweepPath = sixMonthSweepPositions.reduce((path, p, i) => path += `${i===0?"M":" L"} ${p[0]} ${p[1]}`, "");
+    const sixMonthSweepPath = sixMonthSweepPositions.reduce((path, p, i) => path += `${i === 0 ? "M" : " L"} ${p[0]} ${p[1]}`, "");
 
     return <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`}>
         <ellipse cx={overdueX} cy={overdueY} rx={overdueRadius} ry={overdueRadius} fill="red" />
-        { !isNaN(pendingX) && <ellipse cx={pendingX} cy={pendingY} rx={pendingRadius} ry={pendingRadius} fill="green" /> }
-        <path d={ markerPath } className="age-rings" fill="none" />
-        <path d={ nowSweepPath } stroke="rgba(128,128,255,0.5)" fill="none" />
-        <path d={ sixMonthSweepPath } stroke="rgba(128,128,255,0.5)" fill="none" strokeDasharray="4 4" />
+        {!isNaN(pendingX) && <ellipse cx={pendingX} cy={pendingY} rx={pendingRadius} ry={pendingRadius} fill="green" />}
+        <path d={markerPath} className="age-rings" fill="none" />
+        <path d={nowSweepPath} stroke="rgba(128,128,255,0.5)" fill="none" />
+        <path d={sixMonthSweepPath} stroke="rgba(128,128,255,0.5)" fill="none" strokeDasharray="4 4" />
         {
             Object.entries(labels).map(([label, value]) => {
                 const radius = value * ORBIT_SCALE;
                 const y = MARGIN + radius * 2;
-                return <text key={label} x={500} y={y} textAnchor="middle" className="age-label" fontSize={10}>{label}</text>;
+                return <text key={label} x={500} y={HEIGHT - y} textAnchor="middle" className="age-label" fontSize={10}>{label}</text>;
             })
         }
         {
@@ -247,6 +247,6 @@ export function PledgeBubbles ({ pledges, pendingTotal, now, colourMode, linkPro
         }
         <path d={linkPath.join(" ")} fill="none" stroke="#000" />
         {/* { rings } */}
-        { bubbles }
+        {bubbles}
     </svg>;
 }
