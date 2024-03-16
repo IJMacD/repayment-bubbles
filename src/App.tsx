@@ -3,13 +3,14 @@ import './App.css'
 import { parseCSV } from './csv';
 import { Pledge, PledgeStatus, parsePledges } from './pledges';
 import { PledgeStatsTable } from './PledgeStatsTable';
-import { PledgeBubbles } from './PledgeBubbles';
+import { PledgeBubbles } from './Charts/PledgeBubbles';
 import { ProjectTable } from './ProjectTable';
 import { ColourMode } from './ColourMode';
 import { calcAmountPledged, calcAmountUnrepaid, calcAvgInterestRate, calcInterestPaid, calcInterestPerDay, calcInterestPerDayContracted, filterLivePledges, getLatestInterestRate } from './pledgeStats';
-import { AxisType, LineGraph } from './LineGraph';
-import { PledgeLavaCanvas } from './PledgeLava';
-import { Histogram } from './Histogram';
+import { AxisType, LineGraph } from './Charts/LineGraph';
+import { PledgeLavaCanvas } from './Charts/PledgeLava';
+import { Histogram } from './Charts/Histogram';
+import { ScatterChart } from './Charts/ScatterChart';
 
 function App() {
   const [pledges, setPledges] = useState([] as Pledge[]);
@@ -84,6 +85,8 @@ function App() {
   const projects = new Set(pledges.map(p => p.projectName));
   const liveProjects = new Set(livePledges.map(p => p.projectName));
   // const overdueProjects = new Set(overduePledges.map(p => p.projectName));
+
+  const earliestLiveStart = Math.min(...livePledges.map(p => +p.startDate));
 
   const statsRowsAll = [
     { label: "Pledges", pledges },
@@ -189,6 +192,8 @@ function App() {
           <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcInterestPerDay(filterLivePledges(pledges, now))} xAxisType={AxisType.Date} yAxisType={AxisType.Currency} />
           <h3>Interest per Day (Contracted)</h3>
           <LineGraph width={800} height={250} xMin={earliestStart} xMax={now} yValueFn={now => calcInterestPerDayContracted(filterLivePledges(pledges, now), now)} xAxisType={AxisType.Date} yAxisType={AxisType.Currency} />
+          <h3>Pledge Size</h3>
+          <ScatterChart width={800} height={250} xMin={earliestLiveStart} xMax={now} values={filterLivePledges(pledges, now).map(p => [+p.startDate, p.amount])} xAxisType={AxisType.Date} yAxisType={AxisType.Currency} />
         </div>
       </div>
       <ProjectTable pledges={pledges} now={now} />

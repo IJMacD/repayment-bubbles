@@ -1,5 +1,5 @@
 import { CSSProperties, useEffect, useRef } from "react";
-import { Pledge, PledgeStatus } from "./pledges";
+import { Pledge, PledgeStatus } from "../pledges";
 
 interface PledgeLavaProps {
     pledges: Pledge[];
